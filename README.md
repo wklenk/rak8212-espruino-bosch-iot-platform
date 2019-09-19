@@ -101,6 +101,6 @@ https://www.youtube.com/channel/UC9_Bk9247GgJ3k9O7yxctFg/featured
 
 ## Step 4: Device Provisioning
 
-
+https://deviceprovisioning.eu-1.bosch-iot-suite.com/api/1/50058525-a6ed-4401-9984-f678cd509323/devices
 
 To be continued ...
