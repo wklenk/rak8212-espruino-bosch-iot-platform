@@ -1,5 +1,5 @@
 {
-  "id": "{{device-id}}",
+  "id": "<your namespace>:rak8212",
   "hub": {
     "device": {
       "enabled": true
@@ -8,7 +8,7 @@
       "type": "hashed-password",
       "secrets": [
         {
-          "password": "{{device-password}}"
+          "password": "<your-device-password>"
         }
       ]
     }

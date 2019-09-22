@@ -1,10 +1,11 @@
 # rak8212-espruino-bosch-iot-platform
-Example how to connect to the Bosch IoT Platform using the Quectel BG96's built-in MQTT stack.
+Example how to connect a RAK8212 device to the [Bosch IoT Suite](https://www.bosch-iot-suite.com/) Platform 
+using the [Quectel BG96's](https://www.quectel.com/product/bg96.htm) built-in MQTT stack.
 
 The example will be a simple data logger, periodically sending sensor
 values using NB-IoT connectivity.
 
-The RAK8212 has quite a few sensors on board:
+The [RAK8212](https://www.espruino.com/RAK8212) has quite a few sensors on board:
 
 * Temperature
 * Humidity
@@ -14,43 +15,26 @@ The RAK8212 has quite a few sensors on board:
 * Magnetometer
 * Location (GNSS)
 
-## Step 1: Subscribe to Bosch IoT Suite
-Create yourself a **Bosch IoT Suite account** at http://bosch-iot-suite.com 
-and then subscribe to a free plan of the 
-**Bosch IoT Suite for Asset Communication** service package. 
-This is a ready-to-use integration of **Bosch IoT Hub** and **Bosch IoT Things** for 
-large-scale ingestion of sensor telemetry data and for remote asset control.
+## Assumptions
+You are already familiar with the [RAK 8212](https://www.espruino.com/RAK8212) and how to
+program it using [Espruino](https://www.espruino.com/).
 
-Give a name to this service package instance, like `klenk-asset-communication`. 
+## Preparations
+This example uses the **Asset Communication** package of the **Bosch IoT Suite**.
+There are quite a few things to configure before you can start, but there is an excellent
+tutorial that describes the steps in detail:
 
-![Service Subscription](media/service-subscription.png)
+https://www.bosch-iot-suite.com/tutorials/connecting-a-simple-device-to-the-bosch-iot-suite/#book-and-configure
 
-A tutorial how to get started with the Bosch IoT Suite can be found here:
-https://www.bosch-iot-suite.com/getting-started
+What you need to do (steps described in the tutorial):
 
-## Step 2: Create OAuth2 Client
+* Create a Bosch IoT Suite account
+* Subscribe to the Bosch IoT Suite Asset Communications package
+* Configure a namespace for your things (digital twins)
+* Create and configure a technical OAuth2.0 client
+* Generate a test token to access the APIs of the Bosch IoT Suite
 
-The Bosch IoT Suite is composed of several services, and all of these services need you to 
-authenticate to interact with them. Fortunately, you can make use of OAuth2 security tokens to
-authenticate, and the Bosch IoT Suite has a built-in OAuth2 Client that can be used to generate
-these OAuth2 tokens. 
-
-Click the Account Icon, and from the pull-down menu select "OAuth2 Clients".
-
-![OAuth2 Clients](media/oauth2-clients.png)
-
-Create a new OAuth2 Client, assign a name to it and for "scope" select both the "Hub" and "Things".
-
-![OAuth2 Client Scope](media/oauth2-client-scope.png)
-
-When created, it takes some time for the Suite to create the new OAuth2 Client, but when finished
-it provides a  `Client ID` and a `Client secret` for you that can be used to create OAuth2 tokens from
-now on, either interactively in this web portal, or programmatically by other applications that
-need to authenticate against Bosch IoT Suite services ("Suite Authentication").
-
-![OAuth2 Client Details](media/oauth2-client-details.png)
-
-## Step 3: About Vorto Information Models
+## About Vorto Information Models
 
 The IoT Suite gives you full freedom how to model the Digital Twin of your physical devices.
 However, there is an open source project named "Eclipse Vorto" (https://vorto.eclipse.org) that allows
@@ -99,8 +83,137 @@ is available in this repository
 Have a look at this Youtube channel of Tim Grossmann for more inspiration about Eclipse Vorto.
 https://www.youtube.com/channel/UC9_Bk9247GgJ3k9O7yxctFg/featured
 
-## Step 4: Device Provisioning
+## Device Provisioning
 
-https://deviceprovisioning.eu-1.bosch-iot-suite.com/api/1/50058525-a6ed-4401-9984-f678cd509323/devices
+Again, the Bosch tutorial at 
+https://www.bosch-iot-suite.com/tutorials/connecting-a-simple-device-to-the-bosch-iot-suite/#book-and-configure
+gives detailed instructions how to register your device with the Bosch IoT Suite.
 
-To be continued ...
+But, as the RAK8212 has its own Information Model and provisioning script, use this one that
+is available in this repository:
+
+[rak8212-device-provisioning-msg.json](rak8212-device-provisioning-msg.json)
+
+    {
+      "id": "<your namespace>:rak8212",
+      "hub": {
+        "device": {
+          "enabled": true
+        },
+        "credentials": {
+          "type": "hashed-password",
+          "secrets": [
+            {
+              "password": "<your-device-password>"
+            }
+          ]
+        }
+      },
+      "things": {
+        "thing": {
+          "attributes": {
+            "thingName": "RAK8212",
+            "definition": "org.klenk.connectivity.iot:RAK8212:1.0.0"
+          },
+          "features": {
+            "temperature": {
+              "definition": [
+                "org.eclipse.vorto.tutorial:Temperature:1.0.0"
+              ],
+              "properties": {
+                "status": {
+                  "value": 0.0,
+                  "unit": ""
+                }
+              }
+            },
+
+## How to send telemetry data
+
+To send telemetry data and in this way update the Digital Twin, you need to built up a 
+[Eclise Ditto](https://www.eclipse.org/ditto/protocol-specification.html) message
+and publish it to topic `telemetry`.
+
+    sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,'
+        + JSON.stringify("telemetry"),
+        5000,
+        '{' +
+        '  "topic": "org.klenk.connectivity.iot/rak8212/things/twin/commands/modify",' +
+        '  "headers": {},' +
+        '  "path": "/features/temperature/properties",' +
+        '  "value": {' +
+        '    "status": {' +
+        '      "value": ' + currentTemperature + ',' +
+        '      "unit": "Degree Celsius"' +
+        '    }' +
+        '  }' +
+        '}',
+        '+QMTPUB:'
+      )
+         .then( ... )
+
+Using the Quectal BG96 module's command `AT+QMTPUB` to publish a message to a MQTT topic,
+this code section updates the feature "temperature" of the **Digital Twin**.
+
+## How to subscribe to "modified" events of the Digital Twin
+
+The built-in MQTT client of the Quectel BG96 makes it easy to subscribe to topics:
+You just need to use the `AT+QMTSUB` command to subscribe to topic `command/+/+/req/#`.
+
+    sendAtCommand('AT+QMTSUB=0,1,' + JSON.stringify("command/+/+/req/#") + ',1', 15000, '+QMTSUB:')
+      .then( ... )
+
+Now, whenever a message is received on this topic, the MQTT client creates an output line 
+starting with `+QMTRECV: `, like the following one:
+
+    ] "\r\n+QMTRECV: 0,3,\"command///req/2240e49bdde-57ad-4652-b557-70f2dcf7"
+    ] "41c0replies/modified\",\"{\"topic\":\"org.klenk.connectivity.iot"
+    ] "/rak8212/things/twin/events/modified\",\"headers\":{\"sec-fetch-mode\":\"cors\", 
+    ....
+
+You can see this output if you put the debug mode on.
+In case someone changed the device's digital twin, we will receive a [Eclise Ditto](https://www.eclipse.org/ditto/protocol-specification.html) 
+"modified" message like the following one:
+
+    {
+      "topic": "org.klenk.connectivity.iot/rak8212/things/twin/events/modified",
+      "headers": {
+        "sec-fetch-mode": "cors",
+        "referer": "https://apidocs.bosch-iot-suite.com/?urls.primaryName=Bosch%20IoT%20Things%20-%20API%20v2",
+        "sec-fetch-site": "same-site",
+        "accept-language": "de-DE, de;q=0.9, en-US;q=0.8, en;q=0.7",
+        "correlation-id": "0e49bdde-57ad-4652-b557-70f2dcf741c0",
+        "dnt": "1",
+        "source": "iot-suite:service:iot-things-eu-1:50058525-a6ed-4401-9984-f678cd509323_things/full-access",
+        "version": 2,
+        "accept": "application/json",
+        "host": "things.eu-1.bosch-iot-suite.com",
+        "content-type": "application/vnd.eclipse.ditto+json",
+        "accept-encoding": "gzip, deflate, br"
+      },
+      "path": "/features/temperature/properties",
+      "value": {
+        "status": {
+          "value": 21.61,
+          "unit": "Degree Celsius"
+        }
+      },
+      "revision": 525,
+      "timestamp": "2019-09-22T10:58:49.666Z"
+    }
+
+This one says that the feature "temperature" was modified.
+
+In order to process this message, you just have to write a "handler" that deals with this
+incoming message.
+
+## Conclusion
+As the [Quectel BG96 module](https://www.quectel.com/product/bg96.htm) already has built in a MQTT
+stack, it is simple to communicate with the [Bosch IoT Suite](https://www.bosch-iot-suite.com/) using
+this protocol. Using [Espruino](https://www.espruino.com/), one can efficiently build IoT prototypes
+without a big learning curve in regards to the programming of embedded devices.
+
+However, it needs to be evaluated if MQTT in combination with this kind of verbose 
+[Eclise Ditto](https://www.eclipse.org/ditto/protocol-specification.html) messages is actually a
+viable way for NB-IoT communication, where every transmitted byte counts to save energy and 
+communication costs.
