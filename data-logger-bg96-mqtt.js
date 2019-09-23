@@ -354,6 +354,7 @@ function e_PublishTelemetryData() {
     .then((line) => {
       if (connection_options.debug) console.log("+QMTPUB line:", line);
 
+      // Eclipse Ditto modify command for feature "humidity"
       return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,'
         + JSON.stringify("telemetry"),
         5000,
@@ -364,6 +365,26 @@ function e_PublishTelemetryData() {
         '  "value": {' +
         '    "status": {' +
         '      "currentMeasured": ' + currentEnvironmentData.humidity.toFixed(2)  +
+        '    }' +
+        '  }' +
+        '}',
+        '+QMTPUB:'
+      );
+    })
+    .then((line) => {
+      if (connection_options.debug) console.log("+QMTPUB line:", line);
+
+      // Eclipse Ditto modify command for feature "barometricPressure"
+      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,'
+        + JSON.stringify("telemetry"),
+        5000,
+        '{' +
+        '  "topic": "org.klenk.connectivity.iot/rak8212/things/twin/commands/modify",' +
+        '  "headers": {},' +
+        '  "path": "/features/barometricPressure/properties",' +
+        '  "value": {' +
+        '    "status": {' +
+        '      "currentMeasured": ' + currentEnvironmentData.pressure.toFixed(2)  +
         '    }' +
         '  }' +
         '}',
