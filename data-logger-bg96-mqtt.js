@@ -332,10 +332,9 @@ function e_SubscribeToCommands() {
 function e_PublishTelemetryData() {
   if (connection_options.debug) console.log(ENTERING_STATE, STATE_PUBLISH_TELEMETRY_DATA);
 
-  var currentTemperature = bme280.getData().temp.toFixed(2);
-  if (connection_options.debug) console.log("Current temperature: ", currentTemperature);
+  var currentEnvironmentData = bme280.getData();
 
-  // Eclipse Ditto modify command
+  // Eclipse Ditto modify command for feature "temperature"
   sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,'
     + JSON.stringify("telemetry"),
     5000,
@@ -345,7 +344,7 @@ function e_PublishTelemetryData() {
     '  "path": "/features/temperature/properties",' +
     '  "value": {' +
     '    "status": {' +
-    '      "value": ' + currentTemperature + ',' +
+    '      "value": ' + currentEnvironmentData.temp.toFixed(2) + ',' +
     '      "unit": "Degree Celsius"' +
     '    }' +
     '  }' +
@@ -355,13 +354,25 @@ function e_PublishTelemetryData() {
     .then((line) => {
       if (connection_options.debug) console.log("+QMTPUB line:", line);
 
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          resolve();
-        }, 5000);
-      });
+      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,'
+        + JSON.stringify("telemetry"),
+        5000,
+        '{' +
+        '  "topic": "org.klenk.connectivity.iot/rak8212/things/twin/commands/modify",' +
+        '  "headers": {},' +
+        '  "path": "/features/humidity/properties",' +
+        '  "value": {' +
+        '    "status": {' +
+        '      "currentMeasured": ' + currentEnvironmentData.humidity.toFixed(2)  +
+        '    }' +
+        '  }' +
+        '}',
+        '+QMTPUB:'
+      );
     })
     .then((line) => {
+      if (connection_options.debug) console.log("+QMTPUB line:", line);
+
       sm.signal('ok');
     })
     .catch((err) => {

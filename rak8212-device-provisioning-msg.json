@@ -50,16 +50,13 @@
         },
         "humidity": {
           "definition": [
-            "com.bosch.iot.suite.example.octopussuiteedition:Humidity:1.1.0"
+            "org.eclipse.vorto:Humidity:1.1.0"
           ],
           "properties": {
             "status": {
-              "sensorValue": 0.0,
-              "minMeasuredValue": 0.0,
-              "maxMeasuredValue": 0.0,
-              "minRangeValue": 0.0,
-              "maxRangeValue": 0.0,
-              "sensorUnits": ""
+              "currentMeasured": 0.0,
+              "minMeasured": 0.0,
+              "maxMeasured": 0.0
             }
           }
         },

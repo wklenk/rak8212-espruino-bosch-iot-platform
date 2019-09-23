@@ -52,7 +52,7 @@ The **Information Model** for the RAK8212 looks as follows:
     displayname "RAK8212"
     description "Information Model for RAK8212"
     
-    using com.bosch.iot.suite.example.octopussuiteedition.Humidity; 1.1.0
+    using org.eclipse.vorto.Humidity; 1.1.0
     using org.eclipse.vorto.tutorial.Temperature; 1.0.0
     using org.eclipse.vorto.Illuminance; 1.0.0
     using com.bosch.iot.suite.example.octopussuiteedition.Magnetometer; 1.1.0
