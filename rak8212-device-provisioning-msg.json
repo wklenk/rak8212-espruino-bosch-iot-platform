@@ -113,6 +113,34 @@
               "longitude": 0.0
             }
           }
+        },
+        "indicatorLight": {
+          "properties": {
+            "config": {
+              "version": 0,
+              "mode": "off"
+            }
+          }
+        },
+        "indicatorLight@desired": {
+          "properties": {
+            "config": {
+              "version": 0,
+              "mode": "off",
+              "timestamp": 0
+            }
+          }
+        },
+        "connectionStatus": {
+          "definition": [
+            "com.bosch.iot.suite.standard:ConnectionStatus:1.0.0"
+          ],
+          "properties": {
+            "status": {
+              "readySince": 0,
+              "readyUntil": 0
+            }
+          }
         }
       }
     }
