@@ -207,6 +207,11 @@ This one says that the feature "temperature" was modified.
 In order to process this message, you just have to write a "handler" that deals with this
 incoming message.
 
+## Notes
+Remote switching of the RAK8212 LED using the _indicatorLight@desired_ feature works only after
+customizing the Payload Mapping scripts for inbound and outbound messages. Please contact me
+in case you want to try out.
+
 ## Conclusion
 As the [Quectel BG96 module](https://www.quectel.com/product/bg96.htm) already has built in a MQTT
 stack, it is simple to communicate with the [Bosch IoT Suite](https://www.bosch-iot-suite.com/) using
