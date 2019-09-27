@@ -39,6 +39,7 @@ var STATE_CONFIGURE_MODEM = 'Configure Modem';
 var STATE_REGISTER_TO_NETWORK = 'Register To Network';
 var STATE_OPEN_MQTT_NETWORK =  'Open MQTT Network';
 var STATE_CONNECT_TO_SERVER = 'Connect To Server';
+var STATE_REQUEST_DESIRED_IL_CONFIG = 'Request desired indicator light config';
 var STATE_PUBLISH_TELEMETRY_DATA = 'Publish Telemetry Data';
 var STATE_SUBSCRIBE_TO_COMMANDS = "Subscribe To Commands";
 var STATE_SLEEP = 'Sleep';
@@ -51,6 +52,9 @@ var errCnt = 0;
 var updateCnt = 1;
 var smRestartCnt = 0;
 var qmtstat = 0;
+var indicatorLightOn = false;
+var indicatorLightReportedVersion = -1;
+var indicatorLightDesiredVersion = 0;
 
 var sm = require("StateMachine").FSM();
 
@@ -145,6 +149,18 @@ sendAtCommandAndWaitForPrompt = function (command, timeoutMs, sendLineAfterPromp
     });
   });
 };
+
+// Switch LED on/off
+function controlLed(desiredIndicatorLightMode) {
+
+  if (desiredIndicatorLightMode === 'off') {
+    digitalWrite(LED1, false);
+    indicatorLightOn = false;
+  } else if (desiredIndicatorLightMode === 'on') {
+    digitalWrite(LED1, true);
+    indicatorLightOn = true;
+  }
+}
 
 //
 // Finite State Machine: States
@@ -309,6 +325,14 @@ function e_SubscribeToCommands() {
 
     var payloadJson = JSON.parse(line.substr(openingBrace));
     if (connection_options.debug) console.log('Incoming Ditto message:', payloadJson);
+
+    if (payloadJson.path === '/features/indicatorLight@desired/properties') {
+      indicatorLightDesiredVersion = payloadJson.value.config.version;
+      controlLed(payloadJson.value.config.mode);
+    } else if (payloadJson.path === '/features/indicatorLight@desired/properties/config') {
+      indicatorLightDesiredVersion = payloadJson.value.version;
+      controlLed(payloadJson.value.mode);
+    }
   });
 
   // Subscribe to incoming command messages from the Hub
@@ -319,6 +343,15 @@ function e_SubscribeToCommands() {
     '+QMTSUB:')
     .then((line) => {
       if (connection_options.debug) console.log("+QMTSUB line:", line);
+
+      // Wait 5 seconds in order to let the backend establish the connection to the device.
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          resolve();
+        }, 5000);
+      });
+    })
+    .then((line) => {
       sm.signal('ok');
     })
     .catch((err) => {
@@ -334,23 +367,50 @@ function e_PublishTelemetryData() {
 
   var currentEnvironmentData = bme280.getData();
 
-  // Eclipse Ditto modify command for feature "temperature"
+  var indicatorLightModeString = '"off"';
+  if (indicatorLightOn === true) {
+    indicatorLightModeString = '"on"';
+  }
+
+  // TODO: This actually only needs to be sent if desiredVersion != reportedVersion
+  // Eclipse Ditto modify command for feature "indicatorLight"
   sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,'
-    + JSON.stringify("telemetry"),
+    + JSON.stringify("event"),
     5000,
     '{' +
     '  "topic": "org.klenk.connectivity.iot/rak8212/things/twin/commands/modify",' +
     '  "headers": {},' +
-    '  "path": "/features/temperature/properties",' +
+    '  "path": "/features/indicatorLight/properties",' +
     '  "value": {' +
-    '    "status": {' +
-    '      "value": ' + currentEnvironmentData.temp.toFixed(2) + ',' +
-    '      "unit": "Degree Celsius"' +
+    '    "config": {' +
+    '      "version": ' + indicatorLightDesiredVersion + ',' +
+    '      "mode": ' + indicatorLightModeString +
     '    }' +
     '  }' +
     '}',
     '+QMTPUB:'
   )
+    .then((line) => {
+      indicatorLightReportedVersion = indicatorLightDesiredVersion;
+
+      // Eclipse Ditto modify command for feature "temperature"
+      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,'
+        + JSON.stringify("telemetry"),
+        5000,
+        '{' +
+        '  "topic": "org.klenk.connectivity.iot/rak8212/things/twin/commands/modify",' +
+        '  "headers": {},' +
+        '  "path": "/features/temperature/properties",' +
+        '  "value": {' +
+        '    "status": {' +
+        '      "value": ' + currentEnvironmentData.temp.toFixed(2) + ',' +
+        '      "unit": "Degree Celsius"' +
+        '    }' +
+        '  }' +
+        '}',
+        '+QMTPUB:'
+      );
+    })
     .then((line) => {
       if (connection_options.debug) console.log("+QMTPUB line:", line);
 
@@ -398,6 +458,40 @@ function e_PublishTelemetryData() {
     })
     .catch((err) => {
       if (connection_options.debug) console.log(ERROR_IN_STATE, STATE_PUBLISH_TELEMETRY_DATA, err);
+      sm.signal('fail');
+    });
+}
+
+// Request feature "indicatorLight@desired" from Digital Twin
+function e_RequestDesiredIndicatorLightConfig() {
+  if (connection_options.debug) console.log(ENTERING_STATE, STATE_REQUEST_DESIRED_IL_CONFIG);
+
+  return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,'
+    + JSON.stringify("event"),
+    5000,
+    '{' +
+    '  "topic": "org.klenk.connectivity.iot/rak8212/things/twin/commands/retrieve",' +
+    '  "headers": {},' +
+    '  "path": "/features/indicatorLight@desired/properties",' +
+    '  "value": {}' +
+    '}',
+    '+QMTPUB:'
+  )
+    .then((line) => {
+      if (connection_options.debug) console.log("+QMTPUB line:", line);
+
+      // Wait 5 seconds in order to let the backend process the request before continuing
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          resolve();
+        }, 5000);
+      });
+    })
+    .then((line) => {
+      sm.signal('ok');
+    })
+    .catch((err) => {
+      if (connection_options.debug) console.log(ERROR_IN_STATE, STATE_REQUEST_DESIRED_IL_CONFIG, err);
       sm.signal('fail');
     });
 }
@@ -493,7 +587,7 @@ function t_SubscribeToCommands(result) {
 
   switch(result) {
     case('ok'):
-      return {state: STATE_PUBLISH_TELEMETRY_DATA};
+      return {state: STATE_REQUEST_DESIRED_IL_CONFIG};
 
     default:
       return {state: STATE_RESET_MODEM};
@@ -523,6 +617,20 @@ function t_PublishTelemetryData(result) {
   }
 }
 
+function t_RequestDesiredIndicatorLightConfig(result) {
+  if (qmtstat > 0) {
+    return {state: STATE_RESET_MODEM};
+  }
+
+  switch(result) {
+    case('ok'):
+      return {state: STATE_PUBLISH_TELEMETRY_DATA};
+
+    default:
+      return {state: STATE_RESET_MODEM};
+  }
+}
+
 function t_Sleep(result) {
   if (qmtstat > 0) {
     return {state: STATE_RESET_MODEM};
@@ -543,6 +651,7 @@ function onInit() {
   sm.define({name: STATE_REGISTER_TO_NETWORK, enter:e_RegisterToNetwork, signal:t_RegisterToNetwork});
   sm.define({name: STATE_OPEN_MQTT_NETWORK, enter:e_OpenMQTTNetwork, signal:t_OpenMQTTNetwork});
   sm.define({name: STATE_CONNECT_TO_SERVER, enter:e_ConnectToServer, signal:t_ConnectToServer});
+  sm.define({name: STATE_REQUEST_DESIRED_IL_CONFIG, enter:e_RequestDesiredIndicatorLightConfig, signal:t_RequestDesiredIndicatorLightConfig});
   sm.define({name: STATE_SUBSCRIBE_TO_COMMANDS, enter:e_SubscribeToCommands, signal:t_SubscribeToCommands});
   sm.define({name: STATE_PUBLISH_TELEMETRY_DATA, enter:e_PublishTelemetryData, signal:t_PublishTelemetryData});
   sm.define({name: STATE_SLEEP, enter:e_Sleep, signal:t_Sleep});
