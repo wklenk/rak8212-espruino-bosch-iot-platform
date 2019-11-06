@@ -55,6 +55,7 @@ var qmtstat = 0;
 var indicatorLightOn = false;
 var indicatorLightReportedVersion = -1;
 var indicatorLightDesiredVersion = 0;
+var msgId = 1; // Increase msgId each time a message with QoS=1 is sent
 
 var sm = require("StateMachine").FSM();
 
@@ -374,7 +375,7 @@ function e_PublishTelemetryData() {
 
   // TODO: This actually only needs to be sent if desiredVersion != reportedVersion
   // Eclipse Ditto modify command for feature "indicatorLight"
-  sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,' // QoS = 1
+  sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,' + (msgId++) + ',1,0,' // QoS = 1
     + JSON.stringify("event"),
     5000,
     '{' +
@@ -494,7 +495,7 @@ function e_PublishTelemetryData() {
 function e_RequestDesiredIndicatorLightConfig() {
   if (connection_options.debug) console.log(ENTERING_STATE, STATE_REQUEST_DESIRED_IL_CONFIG);
 
-  return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,' // QoS = 1
+  return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,' + (msgId++) + ',1,0,' // QoS = 1
     + JSON.stringify("event"),
     5000,
     '{' +
