@@ -141,6 +141,14 @@
               "readyUntil": 0
             }
           }
+        },
+        "networkTraffic": {
+          "properties": {
+            "status": {
+              "totalBytesSent": 0,
+              "totalBytesReceived": 0
+            }
+          }
         }
       }
     }

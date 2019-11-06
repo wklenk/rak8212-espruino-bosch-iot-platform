@@ -374,7 +374,7 @@ function e_PublishTelemetryData() {
 
   // TODO: This actually only needs to be sent if desiredVersion != reportedVersion
   // Eclipse Ditto modify command for feature "indicatorLight"
-  sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,'
+  sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,' // QoS = 1
     + JSON.stringify("event"),
     5000,
     '{' +
@@ -394,7 +394,7 @@ function e_PublishTelemetryData() {
       indicatorLightReportedVersion = indicatorLightDesiredVersion;
 
       // Eclipse Ditto modify command for feature "temperature"
-      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,'
+      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,0,0,0,' // QoS = 0
         + JSON.stringify("telemetry"),
         5000,
         '{' +
@@ -415,7 +415,7 @@ function e_PublishTelemetryData() {
       if (connection_options.debug) console.log("+QMTPUB line:", line);
 
       // Eclipse Ditto modify command for feature "humidity"
-      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,'
+      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,0,0,0,' // QoS = 0
         + JSON.stringify("telemetry"),
         5000,
         '{' +
@@ -435,7 +435,7 @@ function e_PublishTelemetryData() {
       if (connection_options.debug) console.log("+QMTPUB line:", line);
 
       // Eclipse Ditto modify command for feature "barometricPressure"
-      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,'
+      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,0,0,0,' // QoS = 0
         + JSON.stringify("telemetry"),
         5000,
         '{' +
@@ -446,6 +446,34 @@ function e_PublishTelemetryData() {
         '    "status": {' +
         '      "currentMeasured": ' + currentEnvironmentData.pressure.toFixed(2)  +
         '    }' +
+        '  }' +
+        '}',
+        '+QMTPUB:'
+      );
+    })
+    .then((line) => {
+      if (connection_options.debug) console.log("+QMTPUB line:", line);
+
+      // Query the current bytes sent and received
+      return sendAtCommand('AT+QGDCNT?', 1000, '+QGDCNT:');
+    })
+    .then((line) => {
+      if (connection_options.debug) console.log("+QGDCNT line:", line);
+
+      // Example: "+QGDCNT: 3708,5910"
+      line = (line.split(':'))[1].split(',');
+
+      // Eclipse Ditto modify command for feature "networkTraffic"
+      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,0,0,0,' // QoS = 0
+        + JSON.stringify("telemetry"),
+        5000,
+        '{' +
+        '  "topic": "org.klenk.connectivity.iot/rak8212/things/twin/commands/modify",' +
+        '  "headers": {},' +
+        '  "path": "/features/networkTraffic/properties",' +
+        '  "value": {' +
+        '      "totalBytesSent": ' + parseInt(line[0]) + ',' +
+        '      "totalBytesReceived": ' + parseInt(line[1]) +
         '  }' +
         '}',
         '+QMTPUB:'
@@ -466,7 +494,7 @@ function e_PublishTelemetryData() {
 function e_RequestDesiredIndicatorLightConfig() {
   if (connection_options.debug) console.log(ENTERING_STATE, STATE_REQUEST_DESIRED_IL_CONFIG);
 
-  return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,'
+  return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,1,1,0,' // QoS = 1
     + JSON.stringify("event"),
     5000,
     '{' +
