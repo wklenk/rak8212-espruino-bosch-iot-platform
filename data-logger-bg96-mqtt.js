@@ -321,7 +321,13 @@ function e_SubscribeToCommands() {
   at.registerLine(qmtrecv, (line) => {
 
     // TODO: Don't rely on message having a valid JSON payload
+
     // TODO: What happens if the message contains line breaks?
+    // There is definitely a problem when a line starting with "+QMTRECV:" is detected (and this callback
+    // triggered, but not yet all characters and lines have been received by the "at" module.
+    // We somehow should be able to tell the "at" module not only to trigger on a start pattern, but also wait
+    // until some end pattern is received. Or how about a regular expression match?
+
     var openingBrace = line.indexOf('{');
 
     var payloadJson = JSON.parse(line.substr(openingBrace));
