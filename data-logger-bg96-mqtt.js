@@ -81,9 +81,9 @@ var connection_options = {
 var mqtt_options = {
   server: 'mqtt.bosch-iot-hub.com',
   port: 8883,
-  username: 'org.klenk.connectivity.iot_rak8212',
-  hubTenantId: 't50058525a6ed44019984f678cd509323_hub',
-  password: 'secret'
+  username: 'my.name.space_myDeviceId', // value returned from device provisioning
+  hubTenantId: 'my-hub-tenant-id',
+  password: 'my-device-secret'
 };
 
 
@@ -320,13 +320,9 @@ function e_SubscribeToCommands() {
   at.unregisterLine(qmtrecv);
   at.registerLine(qmtrecv, (line) => {
 
-    // TODO: Don't rely on message having a valid JSON payload
-
-    // TODO: What happens if the message contains line breaks?
-    // There is definitely a problem when a line starting with "+QMTRECV:" is detected (and this callback
-    // triggered, but not yet all characters and lines have been received by the "at" module.
-    // We somehow should be able to tell the "at" module not only to trigger on a start pattern, but also wait
-    // until some end pattern is received. Or how about a regular expression match?
+    // This callback is called whenever a line starting with "+QMTRECV:" is detected. A "line" means
+    // a number of characters until a "\r" character is received. But this means, this WON'T WORK if the
+    // payload itself contains a "\r" character. Keep that in mind.
 
     var openingBrace = line.indexOf('{');
 
