@@ -131,17 +131,6 @@
             }
           }
         },
-        "connectionStatus": {
-          "definition": [
-            "com.bosch.iot.suite.standard:ConnectionStatus:1.0.0"
-          ],
-          "properties": {
-            "status": {
-              "readySince": 0,
-              "readyUntil": 0
-            }
-          }
-        },
         "networkTraffic": {
           "properties": {
             "status": {
