@@ -37,7 +37,7 @@ var ERROR_IN_STATE = 'Error in State';
 var STATE_SETUP_EXTERNAL_HARDWARE = 'Setup External Hardware';
 var STATE_CONFIGURE_MODEM = 'Configure Modem';
 var STATE_REGISTER_TO_NETWORK = 'Register To Network';
-var STATE_OPEN_MQTT_NETWORK =  'Open MQTT Network';
+var STATE_OPEN_MQTT_NETWORK = 'Open MQTT Network';
 var STATE_CONNECT_TO_SERVER = 'Connect To Server';
 var STATE_REQUEST_DESIRED_IL_CONFIG = 'Request desired indicator light config';
 var STATE_PUBLISH_TELEMETRY_DATA = 'Publish Telemetry Data';
@@ -209,7 +209,7 @@ function e_ConfigureModem() {
     .then(() => sendAtCommand('AT+CPIN?')) // Fails on locked PIN
     .then(() => {
       var band_value = band_values[connection_options.band];
-      if (undefined === band_value) throw("Unknown band: " + connection_options.band);
+      if (undefined === band_value) throw ("Unknown band: " + connection_options.band);
 
       return sendAtCommand('AT+QCFG="band",0,0,' + band_value + ',1');
     })
@@ -294,10 +294,14 @@ function e_OpenMQTTNetwork() {
 function e_ConnectToServer() {
   if (connection_options.debug) console.log(ENTERING_STATE, STATE_CONNECT_TO_SERVER);
 
-  sendAtCommand('AT+QMTCONN=0,' + JSON.stringify('some-client-id') + ','
-    + JSON.stringify(mqtt_options.username + '@' + mqtt_options.hubTenantId) + ','
-    + JSON.stringify(mqtt_options.password)
-    ,
+  sendAtCommand('AT+QMTCONN=0,' +
+    JSON.stringify('some-client-id') +
+    ',' +
+    JSON.stringify(mqtt_options.username +
+      '@' +
+      mqtt_options.hubTenantId) +
+    ',' +
+    JSON.stringify(mqtt_options.password),
     15000,
     '+QMTCONN:')
     .then((line) => {
@@ -339,9 +343,9 @@ function e_SubscribeToCommands() {
   });
 
   // Subscribe to incoming command messages from the Hub
-  sendAtCommand('AT+QMTSUB=0,1,'
-    + JSON.stringify("command/+/+/req/#")
-    + ',1',
+  sendAtCommand('AT+QMTSUB=0,1,' +
+    JSON.stringify("command/+/+/req/#") +
+    ',1',
     15000,
     '+QMTSUB:')
     .then((line) => {
@@ -377,8 +381,8 @@ function e_PublishTelemetryData() {
 
   // TODO: This actually only needs to be sent if desiredVersion != reportedVersion
   // Eclipse Ditto modify command for feature "indicatorLight"
-  sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,' + (msgId++) + ',1,0,' // QoS = 1
-    + JSON.stringify("event"),
+  sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,' + (msgId++) + ',1,0,' + // QoS = 1
+    JSON.stringify("event"),
     5000,
     '{' +
     '  "topic": "org.klenk.connectivity.iot/rak8212/things/twin/commands/modify",' +
@@ -397,8 +401,8 @@ function e_PublishTelemetryData() {
       indicatorLightReportedVersion = indicatorLightDesiredVersion;
 
       // Eclipse Ditto modify command for feature "temperature"
-      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,0,0,0,' // QoS = 0
-        + JSON.stringify("telemetry"),
+      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,0,0,0,' + // QoS = 0
+        JSON.stringify("telemetry"),
         5000,
         '{' +
         '  "topic": "org.klenk.connectivity.iot/rak8212/things/twin/commands/modify",' +
@@ -418,8 +422,8 @@ function e_PublishTelemetryData() {
       if (connection_options.debug) console.log("+QMTPUB line:", line);
 
       // Eclipse Ditto modify command for feature "humidity"
-      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,0,0,0,' // QoS = 0
-        + JSON.stringify("telemetry"),
+      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,0,0,0,' + // QoS = 0
+        JSON.stringify("telemetry"),
         5000,
         '{' +
         '  "topic": "org.klenk.connectivity.iot/rak8212/things/twin/commands/modify",' +
@@ -427,7 +431,7 @@ function e_PublishTelemetryData() {
         '  "path": "/features/humidity/properties",' +
         '  "value": {' +
         '    "status": {' +
-        '      "currentMeasured": ' + currentEnvironmentData.humidity.toFixed(2)  +
+        '      "currentMeasured": ' + currentEnvironmentData.humidity.toFixed(2) +
         '    }' +
         '  }' +
         '}',
@@ -438,8 +442,8 @@ function e_PublishTelemetryData() {
       if (connection_options.debug) console.log("+QMTPUB line:", line);
 
       // Eclipse Ditto modify command for feature "barometricPressure"
-      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,0,0,0,' // QoS = 0
-        + JSON.stringify("telemetry"),
+      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,0,0,0,' + // QoS = 0
+        JSON.stringify("telemetry"),
         5000,
         '{' +
         '  "topic": "org.klenk.connectivity.iot/rak8212/things/twin/commands/modify",' +
@@ -447,7 +451,7 @@ function e_PublishTelemetryData() {
         '  "path": "/features/barometricPressure/properties",' +
         '  "value": {' +
         '    "status": {' +
-        '      "currentMeasured": ' + currentEnvironmentData.pressure.toFixed(2)  +
+        '      "currentMeasured": ' + currentEnvironmentData.pressure.toFixed(2) +
         '    }' +
         '  }' +
         '}',
@@ -467,8 +471,8 @@ function e_PublishTelemetryData() {
       line = (line.split(':'))[1].split(',');
 
       // Eclipse Ditto modify command for feature "networkTraffic"
-      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,0,0,0,' // QoS = 0
-        + JSON.stringify("telemetry"),
+      return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,0,0,0,' + // QoS = 0
+        JSON.stringify("telemetry"),
         5000,
         '{' +
         '  "topic": "org.klenk.connectivity.iot/rak8212/things/twin/commands/modify",' +
@@ -497,8 +501,8 @@ function e_PublishTelemetryData() {
 function e_RequestDesiredIndicatorLightConfig() {
   if (connection_options.debug) console.log(ENTERING_STATE, STATE_REQUEST_DESIRED_IL_CONFIG);
 
-  return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,' + (msgId++) + ',1,0,' // QoS = 1
-    + JSON.stringify("event"),
+  return sendAtCommandAndWaitForPrompt('AT+QMTPUB=0,' + (msgId++) + ',1,0,' + // QoS = 1
+    JSON.stringify("event"),
     5000,
     '{' +
     '  "topic": "org.klenk.connectivity.iot/rak8212/things/twin/commands/retrieve",' +
@@ -566,128 +570,128 @@ function e_ResetModem(result) {
 //
 
 function t_SetupExternalHardware(result) {
-  return {state: STATE_CONFIGURE_MODEM};
+  return { state: STATE_CONFIGURE_MODEM };
 }
 
 function t_ConfigureModem(result) {
-  return {state: STATE_REGISTER_TO_NETWORK};
+  return { state: STATE_REGISTER_TO_NETWORK };
 }
 
 function t_RegisterToNetwork(result) {
-  switch(result) {
-    case('ok'):
-      return {state: STATE_OPEN_MQTT_NETWORK};
+  switch (result) {
+    case ('ok'):
+      return { state: STATE_OPEN_MQTT_NETWORK };
 
     default:
-      return {state: STATE_RESET_MODEM};
+      return { state: STATE_RESET_MODEM };
   }
 }
 
 function t_OpenMQTTNetwork(result) {
   if (qmtstat > 0) {
-    return {state: STATE_RESET_MODEM};
+    return { state: STATE_RESET_MODEM };
   }
 
-  switch(result) {
-    case('ok'):
-      return {state: STATE_CONNECT_TO_SERVER};
+  switch (result) {
+    case ('ok'):
+      return { state: STATE_CONNECT_TO_SERVER };
 
     default:
-      return {state: STATE_RESET_MODEM};
+      return { state: STATE_RESET_MODEM };
   }
 }
 
 function t_ConnectToServer(result) {
   if (qmtstat > 0) {
-    return {state: STATE_RESET_MODEM};
+    return { state: STATE_RESET_MODEM };
   }
 
-  switch(result) {
-    case('ok'):
-      return {state: STATE_SUBSCRIBE_TO_COMMANDS};
+  switch (result) {
+    case ('ok'):
+      return { state: STATE_SUBSCRIBE_TO_COMMANDS };
 
     default:
-      return {state: STATE_RESET_MODEM};
+      return { state: STATE_RESET_MODEM };
   }
 }
 
 function t_SubscribeToCommands(result) {
   if (qmtstat > 0) {
-    return {state: STATE_RESET_MODEM};
+    return { state: STATE_RESET_MODEM };
   }
 
-  switch(result) {
-    case('ok'):
-      return {state: STATE_REQUEST_DESIRED_IL_CONFIG};
+  switch (result) {
+    case ('ok'):
+      return { state: STATE_REQUEST_DESIRED_IL_CONFIG };
 
     default:
-      return {state: STATE_RESET_MODEM};
+      return { state: STATE_RESET_MODEM };
   }
 }
 
 function t_PublishTelemetryData(result) {
   if (qmtstat > 0) {
-    return {state: STATE_RESET_MODEM};
+    return { state: STATE_RESET_MODEM };
   }
 
-  switch(result) {
-    case('ok'):
+  switch (result) {
+    case ('ok'):
       errCnt = 0; // Reset error counter
       updateCnt++;
-      return {state: STATE_SLEEP};
+      return { state: STATE_SLEEP };
 
     default:
       errCnt++;
       if (errCnt >= 3) {
         errCnt = 0;
-        return {state: STATE_RESET_MODEM};
+        return { state: STATE_RESET_MODEM };
       }
       else {
-        return {state: STATE_SLEEP};
+        return { state: STATE_SLEEP };
       }
   }
 }
 
 function t_RequestDesiredIndicatorLightConfig(result) {
   if (qmtstat > 0) {
-    return {state: STATE_RESET_MODEM};
+    return { state: STATE_RESET_MODEM };
   }
 
-  switch(result) {
-    case('ok'):
-      return {state: STATE_PUBLISH_TELEMETRY_DATA};
+  switch (result) {
+    case ('ok'):
+      return { state: STATE_PUBLISH_TELEMETRY_DATA };
 
     default:
-      return {state: STATE_RESET_MODEM};
+      return { state: STATE_RESET_MODEM };
   }
 }
 
 function t_Sleep(result) {
   if (qmtstat > 0) {
-    return {state: STATE_RESET_MODEM};
+    return { state: STATE_RESET_MODEM };
   }
 
-  return {state: STATE_PUBLISH_TELEMETRY_DATA};
+  return { state: STATE_PUBLISH_TELEMETRY_DATA };
 }
 
 function t_ResetModem(result) {
-  return {state: STATE_POWER_DOWN};
+  return { state: STATE_POWER_DOWN };
 }
 
 function onInit() {
   Bluetooth.setConsole(true); // Don't want to have console on "Serial1" that is used for modem.
 
-  sm.define({name: STATE_SETUP_EXTERNAL_HARDWARE, enter:e_SetupExternalHardware, signal:t_SetupExternalHardware});
-  sm.define({name: STATE_CONFIGURE_MODEM, enter:e_ConfigureModem, signal:t_ConfigureModem});
-  sm.define({name: STATE_REGISTER_TO_NETWORK, enter:e_RegisterToNetwork, signal:t_RegisterToNetwork});
-  sm.define({name: STATE_OPEN_MQTT_NETWORK, enter:e_OpenMQTTNetwork, signal:t_OpenMQTTNetwork});
-  sm.define({name: STATE_CONNECT_TO_SERVER, enter:e_ConnectToServer, signal:t_ConnectToServer});
-  sm.define({name: STATE_REQUEST_DESIRED_IL_CONFIG, enter:e_RequestDesiredIndicatorLightConfig, signal:t_RequestDesiredIndicatorLightConfig});
-  sm.define({name: STATE_SUBSCRIBE_TO_COMMANDS, enter:e_SubscribeToCommands, signal:t_SubscribeToCommands});
-  sm.define({name: STATE_PUBLISH_TELEMETRY_DATA, enter:e_PublishTelemetryData, signal:t_PublishTelemetryData});
-  sm.define({name: STATE_SLEEP, enter:e_Sleep, signal:t_Sleep});
-  sm.define({name: STATE_RESET_MODEM, enter:e_ResetModem, signal:t_ResetModem});
-  sm.define({name: STATE_POWER_DOWN});
+  sm.define({ name: STATE_SETUP_EXTERNAL_HARDWARE, enter: e_SetupExternalHardware, signal: t_SetupExternalHardware });
+  sm.define({ name: STATE_CONFIGURE_MODEM, enter: e_ConfigureModem, signal: t_ConfigureModem });
+  sm.define({ name: STATE_REGISTER_TO_NETWORK, enter: e_RegisterToNetwork, signal: t_RegisterToNetwork });
+  sm.define({ name: STATE_OPEN_MQTT_NETWORK, enter: e_OpenMQTTNetwork, signal: t_OpenMQTTNetwork });
+  sm.define({ name: STATE_CONNECT_TO_SERVER, enter: e_ConnectToServer, signal: t_ConnectToServer });
+  sm.define({ name: STATE_REQUEST_DESIRED_IL_CONFIG, enter: e_RequestDesiredIndicatorLightConfig, signal: t_RequestDesiredIndicatorLightConfig });
+  sm.define({ name: STATE_SUBSCRIBE_TO_COMMANDS, enter: e_SubscribeToCommands, signal: t_SubscribeToCommands });
+  sm.define({ name: STATE_PUBLISH_TELEMETRY_DATA, enter: e_PublishTelemetryData, signal: t_PublishTelemetryData });
+  sm.define({ name: STATE_SLEEP, enter: e_Sleep, signal: t_Sleep });
+  sm.define({ name: STATE_RESET_MODEM, enter: e_ResetModem, signal: t_ResetModem });
+  sm.define({ name: STATE_POWER_DOWN });
 
   sm.init(STATE_SETUP_EXTERNAL_HARDWARE);
 
